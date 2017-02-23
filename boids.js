@@ -7,24 +7,38 @@ function Boid(swarm) {
 }
 
 Boid.prototype.radius = 6;
-Boid.prototype.speed = 2;
+Boid.prototype.speed = 5;
 Boid.prototype.radialSpeed = Math.PI / 60;
-Boid.prototype.vision = 50;
+Boid.prototype.vision = 60;
+Boid.prototype.animationSpeed = 1;
+Boid.prototype.animationFrames = 4;
+Boid.prototype.animationTimer = 0;
+Boid.prototype.animationPreface = 'bee_frame';
+Boid.prototype.timer = Math.floor(Math.random() * 10);
 
 Boid.prototype.draw = function(ctx) {
     var pointLen = this.radius * 2.5;
-    ctx.fillStyle = 'blue';
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(this.x + Math.cos(this.heading + Math.PI / 2) * this.radius,
-               this.y + Math.sin(this.heading + Math.PI / 2) * this.radius);
-    ctx.lineTo(this.x + Math.cos(this.heading + Math.PI) * pointLen,
-               this.y + Math.sin(this.heading + Math.PI) * pointLen);
-    ctx.lineTo(this.x + Math.cos(this.heading - Math.PI / 2) * this.radius,
-               this.y + Math.sin(this.heading - Math.PI / 2) * this.radius);
-    ctx.fill();
+    var image = document.getElementById(this.getFrame());
+    ctx.fillStyle = 'red';
+
+	// save the current co-ordinate system 
+	// before we screw with it
+	ctx.save(); 
+ 
+	// move to the middle of where we want to draw our image
+	ctx.translate(this.x, this.y);
+ 
+	// rotate around that point, converting our 
+	// angle from degrees to radians 
+	ctx.rotate(this.heading + Math.PI / 2);
+ 
+	// draw it up and to the left by half the width
+	// and height of the image 
+	ctx.drawImage(image, -(image.width/2), -(image.height/2));
+ 
+	// and restore the co-ords to how they were when we began
+	ctx.restore();
+
 };
 
 Boid.prototype.distance = function(boid, width, height) {
@@ -118,6 +132,10 @@ Boid.prototype.step = function(swarm) {
     }
 
     this.move(swarm);
+	this.timer++;
+	if (this.timer % this.animationSpeed == 0) {
+		this.animationTimer++;
+	}
 };
 
 Boid.prototype.move = function(swarm) {
@@ -127,6 +145,12 @@ Boid.prototype.move = function(swarm) {
                        -padding, width + padding * 2);
     this.y = Boid.wrap(this.y + Math.sin(this.heading) * this.speed,
                        -padding, height + padding * 2);
+};
+
+Boid.prototype.getFrame = function() {
+	var frameId =  Boid.clamp((this.animationTimer % this.animationFrames), this.animationFrames);
+	if (frameId <= 0) frameId = 1;
+	return this.animationPreface + frameId;
 };
 
 /* Swam prototype. */
@@ -165,6 +189,7 @@ Swarm.step = function (swarm) {
         ctx.canvas.width = window.innerWidth;
     if (ctx.canvas.height != window.innerHeight)
         ctx.canvas.height = window.innerHeight;
+
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, swarm.width, swarm.height);
 
@@ -182,5 +207,5 @@ $(document).ready(function() {
     swarm.id = setInterval(swarm.animate, 33);
     swarm.animate();
     swarm.clear();
-    swarm.createBoid(200);
+    swarm.createBoid(100);
 });
